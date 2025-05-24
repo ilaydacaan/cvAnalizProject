@@ -96,15 +96,12 @@ def calculate_score(analysis: str) -> float:
 
 # 📁 Klasördeki tüm CV'leri değerlendir ve en iyisini döndür
 def analyze_cv_folder_semantic(folder_path: str) -> Tuple[Optional[str], Optional[float]]:
-    best_cv = None
-    best_score = 0.0
+    results = []
 
     for filename in os.listdir(folder_path):
         if filename.endswith(('.pdf', '.txt')):
             file_path = os.path.join(folder_path, filename)
             cv_content = read_cv_content(file_path)
-
-            # ... (önceki kontrol ve yazdırma kodları) ...
 
             if not cv_content or len(cv_content.split()) < 20:
                 print(f"⚠️ {filename} içeriği çok kısa veya boş. Atlandı.")
@@ -113,22 +110,32 @@ def analyze_cv_folder_semantic(folder_path: str) -> Tuple[Optional[str], Optiona
             print(f"\n🔍 {filename} analiz ediliyor...")
 
             result = analyze_cv_with_gemini(cv_content)
-            score = result.get("score", 0.0)
+            score = float(result.get("score", 0.0))  # ☑️ Skoru float'a zorla
             summary = result.get("analysis", "")[:300]
 
+            results.append({
+                "filename": filename,
+                "score": score,
+                "summary": summary
+            })
+
             print(f"✅ Skor: {score} | Dosya: {filename}")
-            print(f"📄 Özet:\n{summary}...\n")
+            print(f"📄 Özet:\n{summary}\n")
 
-            if score > best_score:
-                best_score = score
-                best_cv = filename
+            time.sleep(2)  # Yavaşlatma
 
-            # Her analizden sonra kısa bir bekleme ekle
-            time.sleep(2) # 2 saniye bekle (ihtiyaca göre ayarlayabilirsiniz)
-
-    if best_cv:
-        print(f"\n🏆 En iyi CV: {best_cv} (Skor: {best_score})")
-    else:
+    if not results:
         print("❗ Hiçbir uygun CV bulunamadı.")
+        return None, None
 
-    return best_cv, best_score
+    # ☑️ Skora göre azalan sıralama (en iyi en başta)
+    sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+    print("\n📊 CV Skor Sıralaması (En İyiden En Kötüye):")
+    for idx, item in enumerate(sorted_results, 1):
+        print(f"{idx}. {item['filename']} → Skor: {item['score']}")
+
+    best = sorted_results[0]
+    print(f"\n🏆 En iyi CV: {best['filename']} (Skor: {best['score']})")
+
+    return best["filename"], best["score"]
