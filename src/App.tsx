@@ -1,16 +1,26 @@
+import { useEffect, useState } from 'react';
 import UploadCV from './UploadCV';
 import CVRanking from './CVRanking';
 
 function App() {
-  const sampleRankings = [
-    { name: 'utku.pdf', score: 68.0 },
-    { name: 'ilayda.pdf', score: 67.0 },
-    { name: 'kadir.pdf', score: 49.0 },
-    { name: 'ilayda-link.pdf', score: 48.0 }
-  ];
+  const [rankings, setRankings] = useState<{ name: string; score: number }[]>([]);
+
+  const fetchRankings = async () => {
+    try {
+      const res = await fetch("http://localhost:8001/rankings");
+      const data = await res.json();
+      setRankings(data);
+    } catch (err) {
+      console.error("❌ Sıralama verisi alınamadı:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRankings();
+  }, []);
 
   return (
-    <div style={{ 
+    <div style={{
       minHeight: '100vh',
       backgroundColor: '#f5f5f5',
       padding: '2rem 0'
@@ -28,11 +38,13 @@ function App() {
         }}>
           CV Analiz Sistemi
         </h1>
-        <UploadCV />
-        <CVRanking rankings={sampleRankings} />
+
+        {/* Dosya yüklendikten sonra sıralamayı yenilemek için callback geçiyoruz */}
+        <UploadCV onUploadSuccess={fetchRankings} />
+        <CVRanking rankings={rankings} />
       </div>
     </div>
   );
 }
 
-export default App; 
+export default App;

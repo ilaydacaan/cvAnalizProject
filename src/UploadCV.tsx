@@ -3,8 +3,12 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8001';
 
-export default function UploadCV() {
-  const [result, setResult] = useState<any>(null);
+type UploadCVProps = {
+  onUploadSuccess: () => void;
+};
+
+const UploadCV: React.FC<UploadCVProps> = ({ onUploadSuccess }) => {
+  const [result, setResult] = useState<{ best_cv: string; score: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -18,14 +22,11 @@ export default function UploadCV() {
     setLoading(true);
     setError(null);
 
-    console.log('Yüklenen dosya sayısı:', files.length);
     for (let i = 0; i < files.length; i++) {
-      console.log(`Dosya ${i + 1}:`, files[i].name);
       formData.append("files", files[i]);
     }
 
     try {
-      console.log('Backend\'e istek gönderiliyor...');
       const res = await axios.post(`${API_URL}/analyze-cvs/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -35,17 +36,16 @@ export default function UploadCV() {
           console.log(`Yükleme ilerlemesi: ${percentCompleted}%`);
         },
       });
+
       console.log('Backend yanıtı:', res.data);
       setResult(res.data);
+
+      // 🎯 Dosya yüklendikten sonra App.tsx'teki sıralamayı yenile
+      onUploadSuccess();
+
     } catch (err) {
       console.error('CV analiz hatası:', err);
       if (axios.isAxiosError(err)) {
-        console.error('Axios hata detayları:', {
-          status: err.response?.status,
-          statusText: err.response?.statusText,
-          data: err.response?.data,
-          headers: err.response?.headers
-        });
         setError(`Hata: ${err.response?.data?.detail || err.message}`);
       } else {
         setError(err instanceof Error ? err.message : 'CV analizi sırasında bir hata oluştu');
@@ -75,13 +75,13 @@ export default function UploadCV() {
             type="file" 
             name="cvfiles" 
             multiple 
-            required 
-            // @ts-ignore: webkitdirectory özelliği tarayıcıda destekleniyor
+            required
+            //@ts-ignore
             webkitdirectory=""
-            // @ts-ignore: directory özelliği tarayıcıda destekleniyor
+            //@ts-ignore
             directory=""
             onChange={handleFolderSelect}
-            style={{ 
+            style={{
               marginRight: '10px',
               padding: '8px',
               border: '1px solid #ddd',
@@ -113,8 +113,8 @@ export default function UploadCV() {
       </form>
 
       {error && (
-        <div style={{ 
-          color: 'red', 
+        <div style={{
+          color: 'red',
           marginTop: '10px',
           padding: '10px',
           backgroundColor: '#ffebee',
@@ -124,25 +124,19 @@ export default function UploadCV() {
         </div>
       )}
 
-      {result && (
-        <div style={{ 
+      {result && result.best_cv && (
+        <div style={{
           marginTop: '20px',
           padding: '20px',
           backgroundColor: '#f8f9fa',
           borderRadius: '4px'
         }}>
-          <h3 style={{ marginBottom: '10px' }}>En İyi CV: {result.best_cv}</h3>
-          <pre style={{ 
-            whiteSpace: 'pre-wrap',
-            backgroundColor: '#fff',
-            padding: '10px',
-            borderRadius: '4px',
-            border: '1px solid #dee2e6'
-          }}>
-            {JSON.stringify(result.analysis, null, 2)}
-          </pre>
+          <h3>🏆 En İyi CV: {result.best_cv}</h3>
+          <p>Skor: {result.score}</p>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default UploadCV;
