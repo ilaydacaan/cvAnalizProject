@@ -1,19 +1,8 @@
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebase/firebaseConfig.ts';
+import { auth } from '../../firebase/firebaseConfig';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  pageStyles,
-  formContainerStyles,
-  titleStyles,
-  inputGroupStyles,
-  labelStyles,
-  inputStyles,
-  buttonStyles,
-  switchButtonStyles,
-  errorStyles
-} from './style';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,11 +11,21 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Burada gerçek kimlik doğrulama işlemleri yapılacak
-    login();
-    navigate('/');
+    setError(null);
+
+    try {
+      // Firebase ile giriş yap
+      await signInWithEmailAndPassword(auth, email, password);
+      // Context'teki login fonksiyonunu çağır
+      login();
+      // Ana sayfaya yönlendir
+      navigate('/');
+    } catch (err) {
+      console.error('Giriş hatası:', err);
+      setError('Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin.');
+    }
   };
 
   return (
@@ -53,6 +52,18 @@ const Login = () => {
         }}>
           Giriş Yap
         </h2>
+        {error && (
+          <div style={{
+            color: '#dc3545',
+            backgroundColor: '#f8d7da',
+            padding: '0.75rem',
+            borderRadius: '4px',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{
@@ -64,6 +75,8 @@ const Login = () => {
             </label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               style={{
                 width: '100%',
@@ -83,6 +96,8 @@ const Login = () => {
             </label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
               style={{
                 width: '100%',
@@ -113,15 +128,15 @@ const Login = () => {
           marginTop: '1rem'
         }}>
           Hesabınız yok mu?{' '}
-          <a
-            href="/signup"
+          <Link
+            to="/signup"
             style={{
               color: '#007bff',
               textDecoration: 'none'
             }}
           >
             Kayıt Ol
-          </a>
+          </Link>
         </p>
       </div>
     </div>

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import UploadCV from './components/UploadCV';
-import CVRanking from './CVRanking';
+import CVRanking from './components/CVRanking';
 import Login from './pages/loginPage/login';
 import SignUp from './pages/signupPage/signup';
 import Navbar from './components/navbar/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './hooks/useAuth';
 
 function App() {
   const [rankings, setRankings] = useState<{ name: string; score: number }[]>([]);
