@@ -3,10 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from tempfile import TemporaryDirectory
 import os
 import uvicorn
-from cv_ai_analyzer import analyze_cv_folder_semantic
 
 # Semantic içerik analizi yapan fonksiyonu içe aktar
-
+from cv_ai_analyzer import analyze_cv_folder_semantic
 
 app = FastAPI()
 
@@ -40,12 +39,15 @@ async def analyze_uploaded_files(files: list[UploadFile] = File(...)):
                 print(f"[INFO] Kaydedilen dosya: {safe_filename} ({len(contents)} byte)")
 
             # Semantic analiz fonksiyonu çağrılıyor
-            best_cv, best_score = analyze_cv_folder_semantic(tmpdir)
+            best_cv, best_score, all_results = analyze_cv_folder_semantic(tmpdir)
+            
+            print(f"[DEBUG] Tüm sonuçlar: {all_results}")  # Debug için
 
-            if best_cv:
+            if all_results:
                 return {
                     "best_cv": best_cv,
-                    "score": best_score
+                    "score": best_score,
+                    "all_results": all_results
                 }
             else:
                 return {
@@ -57,4 +59,4 @@ async def analyze_uploaded_files(files: list[UploadFile] = File(...)):
         return {"error": str(e)}
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

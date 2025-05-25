@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import json
 import pdfplumber
 import google.generativeai as genai
 from typing import Tuple, Optional
@@ -19,7 +20,6 @@ def read_cv_content(file_path: str) -> str:
                     page_text = page.extract_text()
                     if page_text:
                         text += page_text + "\n"
-
             print(f"[DEBUG] {file_path} → {len(text.split())} kelime")
             print(f"[Önizleme] {text[:200]}")
             return text
@@ -37,31 +37,44 @@ def read_cv_content(file_path: str) -> str:
         print(f"❌ Dosya okuma hatası ({file_path}): {str(e)}")
         return ""
 
+# 🔢 JSON'dan puan hesapla
+def calculate_score(analysis: str) -> float:
+    try:
+        json_text_match = re.search(r"\{.*\}", analysis, re.DOTALL)
+        if json_text_match:
+            json_text = json_text_match.group()
+            data = json.loads(json_text)
+            scores = list(data.values())
+            scores = [int(s) for s in scores if isinstance(s, int) and 0 <= s <= 100]
+            if scores:
+                print(f"📊 JSON'dan alınan puanlar: {scores}")
+                return round(sum(scores) / len(scores), 2)
+    except Exception as e:
+        print(f"⚠️ Skor hesaplama hatası: {e}")
+    return 0.0
+
 # 🤖 Gemini API ile CV analiz et
 def analyze_cv_with_gemini(cv_content: str) -> dict:
     try:
-        model = genai.GenerativeModel("models/gemini-2.0-flash")  # ✅ DOĞRU MODEL ADI
+        model = genai.GenerativeModel("models/gemini-2.0-flash")
 
         prompt = f"""
-Aşağıda bir CV metni bulunmaktadır. Bu kişiyi aşağıdaki 5 kritere göre değerlendir:
+Aşağıda bir CV metni bulunmaktadır. Lütfen bu kişiyi 5 kritere göre değerlendir ve SADECE aşağıdaki JSON çıktısını üret:
 
-1. Eğitim durumu (0-100)
-2. İş/staj deneyimi (0-100)
-3. Teknik beceriler (0-100)
-4. Dil becerileri (0-100)
-5. Genel değerlendirme (0-100)
-
-Her kriter için açıkça 0-100 arasında bir puan ver. Sadece sayıların net geçtiği bir analiz metni üret.
+{{
+  "education": 0-100,
+  "experience": 0-100,
+  "technical_skills": 0-100,
+  "language_skills": 0-100,
+  "overall": 0-100
+}}
 
 CV:
-\"\"\"
-{cv_content[:4000]}
-\"\"\"
+\"\"\"{cv_content[:4000]}\"\"\"
 """
 
         response = model.generate_content(prompt)
 
-        # Yanıtı güvenli şekilde al
         text = ""
         if hasattr(response, "text"):
             text = response.text.strip()
@@ -82,18 +95,6 @@ CV:
         print(f"❌ Gemini API hatası: {str(e)}")
         return {"error": str(e), "score": 0.0}
 
-# 🔢 Analiz metninden puan hesapla
-def calculate_score(analysis: str) -> float:
-    try:
-        scores = re.findall(r"\b(\d{1,3})\b", analysis)
-        scores = [int(s) for s in scores if 0 <= int(s) <= 100]
-        if scores:
-            print(f"📊 Sayılar bulundu: {scores}")
-            return round(sum(scores) / len(scores), 2)
-    except:
-        pass
-    return 0.0
-
 # 📁 Klasördeki tüm CV'leri değerlendir ve en iyisini döndür
 def analyze_cv_folder_semantic(folder_path: str) -> Tuple[Optional[str], Optional[float]]:
     results = []
@@ -110,7 +111,7 @@ def analyze_cv_folder_semantic(folder_path: str) -> Tuple[Optional[str], Optiona
             print(f"\n🔍 {filename} analiz ediliyor...")
 
             result = analyze_cv_with_gemini(cv_content)
-            score = float(result.get("score", 0.0))  # ☑️ Skoru float'a zorla
+            score = float(result.get("score", 0.0))
             summary = result.get("analysis", "")[:300]
 
             results.append({
@@ -122,13 +123,12 @@ def analyze_cv_folder_semantic(folder_path: str) -> Tuple[Optional[str], Optiona
             print(f"✅ Skor: {score} | Dosya: {filename}")
             print(f"📄 Özet:\n{summary}\n")
 
-            time.sleep(2)  # Yavaşlatma
+            time.sleep(2)
 
     if not results:
         print("❗ Hiçbir uygun CV bulunamadı.")
         return None, None
 
-    # ☑️ Skora göre azalan sıralama (en iyi en başta)
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
 
     print("\n📊 CV Skor Sıralaması (En İyiden En Kötüye):")
