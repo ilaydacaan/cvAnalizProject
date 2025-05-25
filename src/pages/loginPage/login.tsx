@@ -13,61 +13,119 @@ import {
   switchButtonStyles,
   errorStyles
 } from './style';
+import { useAuth } from '../../context/AuthContext';
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); // Önceki hataları temizle
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/'); // Ana sayfaya yönlendir
-    } catch (err) {
-      setError('Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin.'); // Daha genel bir hata mesajı
-      console.error(err); // Konsola detaylı hatayı yazdır
-    }
+    // Burada gerçek kimlik doğrulama işlemleri yapılacak
+    login();
+    navigate('/');
   };
 
   return (
-    <div style={pageStyles}>
-      <div style={formContainerStyles}>
-        <h2 style={titleStyles}>Giriş Yap</h2>
-        
-        {error && <div style={errorStyles}>{error}</div>}
-
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={inputGroupStyles}>
-            <label style={labelStyles} htmlFor="email">E-posta</label>
-            <input 
-              id="email"
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#f5f5f5'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        width: '100%',
+        maxWidth: '400px'
+      }}>
+        <h2 style={{
+          textAlign: 'center',
+          marginBottom: '2rem',
+          fontSize: '1.5rem',
+          fontWeight: 'bold'
+        }}>
+          Giriş Yap
+        </h2>
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: '500'
+            }}>
+              E-posta
+            </label>
+            <input
               type="email"
-              placeholder="ornek@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               required
-              style={inputStyles as React.CSSProperties}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                borderRadius: '4px',
+                border: '1px solid #ddd'
+              }}
             />
           </div>
-          <div style={inputGroupStyles}>
-            <label style={labelStyles} htmlFor="password">Şifre</label>
-            <input 
-              id="password"
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: '500'
+            }}>
+              Şifre
+            </label>
+            <input
               type="password"
-              placeholder="Şifreniz"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               required
-              style={inputStyles as React.CSSProperties}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                borderRadius: '4px',
+                border: '1px solid #ddd'
+              }}
             />
           </div>
-          <button type="submit" style={buttonStyles}>Giriş Yap</button>
+          <button
+            type="submit"
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            Giriş Yap
+          </button>
         </form>
-        <Link to="/signup" style={switchButtonStyles}>Hesabınız yok mu? Kayıt olun</Link>
+        <p style={{
+          textAlign: 'center',
+          marginTop: '1rem'
+        }}>
+          Hesabınız yok mu?{' '}
+          <a
+            href="/signup"
+            style={{
+              color: '#007bff',
+              textDecoration: 'none'
+            }}
+          >
+            Kayıt Ol
+          </a>
+        </p>
       </div>
     </div>
   );
-}
+};
+
+export default Login;
