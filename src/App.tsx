@@ -1,6 +1,14 @@
 import UploadCV from './UploadCV';
+import CVRanking from './CVRanking';
 
 function App() {
+  const sampleRankings = [
+    { name: 'utku.pdf', score: 68.0 },
+    { name: 'ilayda.pdf', score: 67.0 },
+    { name: 'kadir.pdf', score: 49.0 },
+    { name: 'ilayda-link.pdf', score: 48.0 }
+  ];
+
   return (
     <div style={{ 
       minHeight: '100vh',
@@ -21,6 +29,7 @@ function App() {
           CV Analiz Sistemi
         </h1>
         <UploadCV />
+        <CVRanking rankings={sampleRankings} />
       </div>
     </div>
   );
